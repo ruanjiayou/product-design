@@ -1,0 +1,111 @@
+http://blog.csdn.net/mastershaw/article/details/52946753
+http://blog.csdn.net/u013731455/article/details/56278168
+https://www.zhihu.com/question/33734337
+http://novoland.github.io/%E8%AE%BE%E8%AE%A1/2015/08/17/Restful%20API%20%E7%9A%84%E8%AE%BE%E8%AE%A1%E8%A7%84%E8%8C%83.html
+https://www.cnblogs.com/bndong/p/6139598.html
+
+背景:API的就是程序员的UI，和其他UI一样，你必须仔细考虑它的用户体验！
+
+ 1.文档
+    文档和API本身一样重要。
+    文档应该容易找到，并且公开（把它们藏到pdf里面或者存到需要登录的地方都不太好）。
+    文档应该有展示请求和输出的例子：或者以点击链接的方式或者通过curl的方式。
+    如果有更新（特别是公开的API），应该及时更新文档。
+    文档中应该有关于何时弃用某个API的时间表以及详情。
+
+ 2.版本化
+    在API上加入版本信息可以有效的防止用户访问已经更新了的API，同时也能让不同主要版本之间平稳过渡
+    默认用 最新的/传?version/记录API的启用停止使用信息 确定格式/自动关闭版本
+    1) 建议: path中加api/v1
+    2) querystring中version=v1 
+    3) header中 api-version=v1
+    4) 域名中中 v1.api.xxx.com 
+    5) cookie中
+    path->域名->header->querystring->cookie,建议使用1)的形式
+    关于hack的预留: /v1.1 
+    统计API版本使用情况,记录生命周期 启用时间,结束时间,使用范围(refer)
+    随着系统发展，总有一些API失效或者迁移，对失效的API，返回404 not found 或 410 gone；对迁移的API，返回 301 重定向。
+
+ 3.限制API返回值的域
+    有时候API使用者不需要所有的结果，在进行横向限制的时候（例如值返回API结果的前十项）还应该可以进行纵向限制。
+    敏感字段必须限制,如openid等。
+    并且这个功能能有效的提高网络带宽使用率和速度。
+
+ 4.更新和创建操作应该返回资源
+    PUT、POST、PATCH 操作在对资源进行操作的时候，我们应该返回更新的资源。
+
+ 5.url规范
+    1) 不用大写
+    2) 用中划线连接多个单词,利于SEO
+    3) 参数列表编码(+&=#空格)
+    4) 为避免过深的层级,可以用query参数代替params参数
+    5) 考虑到一个接口修改多条记录的情况,单条增删改单词使用单数,涉及多条记录使用复数(params参数不是主键id)
+       DELETE /zoo/1
+       DELETE /zoos/1/amimals/1:2:3
+       DELETE /zoos/1/animals
+    6) 复杂查询
+       过滤 ?type=pending&isApproved=TRUE
+       查询 ?searchStr=xxx
+       排序 ?sort=[['id','DESC'],['createdAt','DESC']]
+       分页 ?limit=20&page=8
+
+ 6.参数校验(validate)模块
+    1) 字段过滤
+    2) 类型验证(简易验证和方法验证)
+    3) 文件校验(拓展名和signature)
+    4) 状态码与唯一code码与详细错误信息
+
+ 7.在post,put,patch上使用json作为输入
+    如果你认同我上面说的，那么你应该决定使用json作为所有的API输出格式，那么我们接下来考虑考虑API的输入数据格式。
+    很多的API使用url编码格式：就像是url查询参数的格式一样：单纯的键值对。这种方法简单有效，但是也有自己的问题：它没有数据类型的概念。这使得程序不得不根据字符串解析出布尔和整数,而且还没有层次结构–虽然有一些关于层次结构信息的约定存在可是和本身就支持层次结构的json比较一下还是不很好用。
+    *express中使用qs模块,get的querystring也可以是对象
+
+ 8.API返回值
+    http状态码: 成功200,1xx和3xx由浏览器处理;4xx和5xx为失败
+    数据不要包装: 错误示例, { success: TRUE, data: {}}
+    分页
+    1) 不推荐: 使用link header的API应该返回一系列组合好了的url而不是。
+    2) 返回中的paging字段对象(count/page/pages/limit/total)让用户自己再去拼
+
+ 9.自动加载相关的资源
+    很多时候，自动加载相关资源非常有用，可以很大的提高效率。但是这却和RESTful的原则相背
+    1) 页面级API. /v1/get-home-data 返回首页用到的所有数据
+    2) 自定义组合API [{url: 'get /apipath', data:{}}]
+    3) 关联查询
+
+10.速度限制
+    为了避免请求泛滥，给API设置速度限制很重要。为此 RFC 6585 引入了HTTP状态码429（too many requests）。加入速度设置之后，应该提示用户，至于如何提示标准上没有说明，不过流行的方法是使用HTTP的返回头。
+    下面是几个必须的返回头（依照twitter的命名规则）：
+    X-Rate-Limit-Limit :当前时间段允许的并发请求数
+    X-Rate-Limit-Remaining:当前时间段保留的请求数。
+    X-Rate-Limit-Reset:当前时间段剩余秒数
+    
+11.鉴权 Authentication
+    restful API是无状态的也就是说用户请求的鉴权和cookie以及session无关，每一次请求都应该包含鉴权证明。必须使用https
+    通过使用ssl我们可以不用每次都提供用户名和密码：我们可以给用户返回一个随机产生的token。这样可以极大的方便使用浏览器访问API的用户。这种方法适用于用户可以首先通过一次用户名-密码的验证并得到token，并且可以拷贝返回的token到以后的请求中。如果不方便，可以使用OAuth 2来进行token的安全传输。
+    支持jsonp的API需要额外的鉴权方法，因为jsonp请求无法发送普通的credential。这种情况下可以在查询url中添加参数：access_token。注意使用url参数的问题是：目前大部分的网络服务器都会讲query参数保存到服务器日志中，这可能会成为大的安全风险。
+    传输token的位置: header/query/body/cookie，实际传输的token可能是一样的。
+    载荷: token/
+
+12.缓存
+    HTTP提供了自带的缓存框架。你需要做的是在返回的时候加入一些返回头信息，在接受输入的时候加入输入验证。基本两种方法：
+    ETag：当生成请求的时候，在HTTP头里面加入ETag，其中包含请求的校验和和哈希值，这个值和在输入变化的时候也应该变化。如果输入的HTTP请求包含IF-NONE-MATCH头以及一个ETag值，那么API应该返回304 not modified状态码，而不是常规的输出结果。
+    Last-Modified：和etag一样，只是多了一个时间戳。返回头里的Last-Modified：包含了 RFC 1123 时间戳，它和IF-MODIFIED-SINCE一致。HTTP规范里面有三种date格式，服务器应该都能处理。
+    redis缓存
+    cdn缓存
+
+13.出错处理(异常拦截器统一处理)
+    就像html错误页面能够显示错误信息一样，API 也应该能返回可读的错误信息–它应该和一般的资源格式一致。API应该始终返回相应的状态码，以反映服务器或者请求的状态。API的错误码可以分为两部分，400系列和500系列，400系列表明客户端错误：如错误的请求格式等。500系列表示服务器错误。API应该至少将所有的400系列的错误以json形式返回。如果可能500系列的错误也应该如此。json格式的错误应该包含以下信息：一个有用的错误信息，一个唯一的错误码，以及任何可能的详细错误描述。
+    不要发生了错误但给2xx响应，客户端可能会缓存成功的http请求,500错误必须生成日志,必要时发送邮件
+    HTTP 状态码
+    400 bad request 常用在参数校验
+    401 unauthorized 未授权
+    403 forbidden 鉴权成功，但是该用户没有权限
+    404 not found 资源不存在
+    429 too many request 请求过多
+    500 internal server error 非业务类异常
+
+14.安全
+    跨域设置
+    header字段白名单
+    cookie

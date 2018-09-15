@@ -1,0 +1,57 @@
+1.文档
+  文档应该公开,并且有展示请求和输出的例子(或者以点击链接的方式或者通过curl的方式)
+  文档应该有项目上线日期,维护期限说明
+2.版本化
+  根据项目的开发进度与维护任务,提供各种版本使得API能平稳过渡,形式如: /v1/admin/self
+  关于hack的预留,当API上线,依赖API的多个实例有不同需求,此时在header中加入详细版本,如:api-version=1.1
+3.API返回值
+  返回的status字段使用字符类型: 'success'/'fail',其他状态按项目需要添加
+  列表数据数量级大于1时应当进行分页处理(count/page/pages/limit/total)
+  隐藏冗余和敏感字段,提高网络带宽使用率和安全性
+4.更新和创建操作返回资源
+  put和post操作后应该返回前端需要的数据
+5.url规范
+  采用小写字母
+  用中划线连接多个单词(利于SEO)
+  参数列表编码(+&=#空格)
+  为避免过深的层级,可以用query参数代替params参数
+  单条增删改单词使用单数,涉及多条记录使用复数
+6.请求参数(query/body/params)校验
+  滤除指定字段外的数据
+  根据指定类型处理参数:query参数中'false'/'true'/0/1转化为boolean类型;'12'等符合([+-]\d+)转化为数值类型;
+  前端可以传null和空字符串类型
+  文件类型校验(拓展名和文件签名)
+  验证失败返回错误码和详细错误信息
+7.异常拦截统一处理
+  http状态码不能老是返回200: 成功200,1xx和3xx由浏览器处理;4xx表明客户端错误和5xx表示服务器错误
+  不要发生了错误但给2xx响应,客户端可能会缓存成功的http请求
+  定义业务失败http状态码:481
+  500错误必须生成日志,必要时发送邮件    
+    400 bad request 常用在参数校验
+    401 unauthorized 未授权
+    403 forbidden 鉴权成功，但是该用户没有权限
+    404 not found 资源不存在
+    429 too many request 请求过多
+    500 internal server error 非业务类异常
+8.鉴权
+  必须使用https
+  authorization(简称auth)的token字符串放在header或query中
+  载荷数据包括账号名/角色类型/过期时间/refresh_token等
+*9.速度限制
+  引入HTTP状态码429（too many requests）
+  下面是几个必须的返回头：
+    X-Rate-Limit-Limit :当前时间段允许的并发请求数
+    X-Rate-Limit-Remaining:当前时间段保留的请求数
+    X-Rate-Limit-Reset:当前时间段剩余秒数
+
+
+
+
+参考链接:
+1) http://blog.csdn.net/mastershaw/article/details/52946753
+2) http://blog.csdn.net/u013731455/article/details/56278168
+3) https://www.zhihu.com/question/33734337
+4) http://novoland.github.io/%E8%AE%BE%E8%AE%A1/2015/08/17/Restful%20API%20%E7%9A%84%E8%AE%BE%E8%AE%A1%E8%A7%84%E8%8C%83.html
+5) https://www.cnblogs.com/bndong/p/6139598.html
+6) https://blog.csdn.net/PEACEFUL000/article/details/53201116
+7) http://runfriends.iteye.com/blog/1136510
